@@ -82,7 +82,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* FIX 1: Ensure game board centers content */
         .game-board {
             background: linear-gradient(145deg, rgba(18, 18, 39, 0.9), rgba(30, 30, 60, 0.7));
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -92,10 +91,9 @@
             backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center the canvas and prize grid */
+            align-items: center; 
         }
 
-        /* FIX 2: Set Canvas to fixed pixel width matching JS */
         #gameCanvas {
             width: 380px; 
             height: 480px;
@@ -105,7 +103,6 @@
             display: block;
         }
 
-        /* FIX 3: Set Prize Grid to fixed pixel width matching JS */
         .prize-grid {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
@@ -125,11 +122,11 @@
             text-align: center;
         }
 
-        .prize-01 { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .prize-02 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-        .prize-03 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .prize-05 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-        .prize-1 { background: linear-gradient(135deg, #fa709a, #fee140); transform: scale(1.05); }
+        /* UPDATED: Prize Colors for $0.01, $0.05, $0.25, $1.00 */
+        .prize-01 { background: linear-gradient(135deg, #667eea, #764ba2); } /* Blue-Purple */
+        .prize-05 { background: linear-gradient(135deg, #f093fb, #f5576c); } /* Pink-Red */
+        .prize-25 { background: linear-gradient(135deg, #4facfe, #00f2fe); } /* Aqua-Blue */
+        .prize-1 { background: linear-gradient(135deg, #fa709a, #fee140); transform: scale(1.05); } /* Gold-Orange (Highlight) */
 
         .controls {
             display: flex;
@@ -207,8 +204,6 @@
             40% { transform: translateY(-10px); }
             60% { transform: translateY(-5px); }
         }
-        
-        /* Removed .debug CSS */
     </style>
 </head>
 <body>
@@ -238,13 +233,13 @@
             
             <div class="prize-grid">
                 <div class="prize-slot prize-01">$0.01</div>
-                <div class="prize-slot prize-02">$0.02</div>
-                <div class="prize-slot prize-03">$0.03</div>
+                <div class="prize-slot prize-01">$0.01</div>
                 <div class="prize-slot prize-05">$0.05</div>
+                <div class="prize-slot prize-25">$0.25</div>
                 <div class="prize-slot prize-1">$1.00</div>
+                <div class="prize-slot prize-25">$0.25</div>
                 <div class="prize-slot prize-05">$0.05</div>
-                <div class="prize-slot prize-03">$0.03</div>
-                <div class="prize-slot prize-02">$0.02</div>
+                <div class="prize-slot prize-01">$0.01</div>
                 <div class="prize-slot prize-01">$0.01</div>
             </div>
         </div>
@@ -256,13 +251,11 @@
     </div>
 
     <script>
-        // NOTE: The 'log' function and the debug element logic have been removed from the UI.
+        // NOTE: All on-screen debug logs are removed.
 
         let game = null;
 
-        // Clean logging function
         function safeLog(message) {
-            // Logs only to the browser console (F12), not on the screen.
             console.log(message);
         }
 
@@ -270,10 +263,8 @@
             constructor() {
                 safeLog('Initializing Plinko Game...');
                 
-                // Get canvas
                 this.canvas = document.getElementById('gameCanvas');
                 
-                // Game state (380x480 matches the fixed CSS size for perfect alignment)
                 this.width = 380; 
                 this.height = 480;
 
@@ -293,10 +284,12 @@
                 this.ballsDropped = 0;
                 this.balls = [];
                 this.pegs = [];
-                this.prizes = [0.01, 0.02, 0.03, 0.05, 1.00, 0.05, 0.03, 0.02, 0.01];
+                
+                // UPDATED PRIZE ARRAY to match the new tiers: [0.01, 0.01, 0.05, 0.25, 1.00, 0.25, 0.05, 0.01, 0.01]
+                this.prizes = [0.01, 0.01, 0.05, 0.25, 1.00, 0.25, 0.05, 0.01, 0.01];
+                
                 this.isRunning = false;
                 
-                // Initialize
                 this.setupCanvas();
                 this.createPegs();
                 this.setupEvents();
@@ -307,12 +300,8 @@
             }
 
             setupCanvas() {
-                // Set internal canvas resolution to match the fixed CSS size
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
-                
-                // The CSS already handles the visual size, but setting style.width/height is redundant
-                // when CSS rules are fixed, so we'll keep the internal resolution correct.
                 safeLog('Canvas setup complete');
             }
 
@@ -323,7 +312,6 @@
                 
                 for (let row = 0; row < rows; row++) {
                     const pegsInRow = 3 + row;
-                    // FIX 4: Recalculate startX to ensure alignment with the 9 prize slots
                     const rowWidth = (pegsInRow - 1) * spacing;
                     const startX = (this.width - rowWidth) / 2;
                     
@@ -394,17 +382,15 @@
                 for (let i = this.balls.length - 1; i >= 0; i--) {
                     const ball = this.balls[i];
                     
-                    // Add to trail
                     ball.trail.push({x: ball.x, y: ball.y});
                     if (ball.trail.length > 6) ball.trail.shift();
                     
-                    // Physics
                     ball.vy += 0.3; // gravity
                     ball.x += ball.vx;
                     ball.y += ball.vy;
                     ball.vx *= 0.99;
                     
-                    // Peg collisions
+                    // Peg collisions logic... (unchanged)
                     for (const peg of this.pegs) {
                         const dx = ball.x - peg.x;
                         const dy = ball.y - peg.y;
@@ -422,16 +408,18 @@
                         }
                     }
                     
-                    // Wall bounce
+                    // Wall bounce logic... (unchanged)
                     if (ball.x < ball.radius || ball.x > this.width - ball.radius) {
                         ball.vx *= -0.8;
                         ball.x = Math.max(ball.radius, Math.min(this.width - ball.radius, ball.x));
                     }
                     
-                    // Bottom collision
+                    // Bottom collision and prize calculation
                     if (ball.y > this.height - 40) {
                         const slotIndex = Math.floor((ball.x / this.width) * this.prizes.length);
                         const index = Math.max(0, Math.min(this.prizes.length - 1, slotIndex));
+                        
+                        // Prize determined by the slot index
                         const prize = this.prizes[index];
                         
                         this.totalWinnings += prize;
@@ -445,10 +433,8 @@
             }
 
             draw() {
-                // Clear
                 this.ctx.clearRect(0, 0, this.width, this.height);
                 
-                // Background
                 const grad = this.ctx.createLinearGradient(0, 0, 0, this.height);
                 grad.addColorStop(0, '#1a1a2e');
                 grad.addColorStop(1, '#0f1419');
@@ -540,7 +526,6 @@
             }
         }
 
-        // Initialize when page loads
         window.addEventListener('load', function() {
             safeLog('Page loaded, starting game...');
             
@@ -553,8 +538,6 @@
                 }
             }, 100);
         });
-        
-        // Removed: function testCanvas() { ... }
     </script>
 </body>
 </html>
