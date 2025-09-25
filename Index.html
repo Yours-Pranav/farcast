@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plinko Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .game-board {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 500px;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #2c3e50, #34495e);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+        }
+
+        .prize-slots {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .prize-slot {
+            flex: 1;
+            padding: 10px 5px;
+            margin: 0 2px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .prize-01 { background: linear-gradient(45deg, #ff9a9e, #fecfef); color: #333; }
+        .prize-02 { background: linear-gradient(45deg, #a8edea, #fed6e3); color: #333; }
+        .prize-03 { background: linear-gradient(45deg, #ffd89b, #19547b); color: white; }
+        .prize-05 { background: linear-gradient(45deg, #667eea, #764ba2); color: white; }
+        .prize-1 { background: linear-gradient(45deg, #f093fb, #f5576c); color: white; }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.win {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .notification.info {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .bounce { animation: bounce 0.6s; }
+
+        @media (max-width: 768px) {
+            .title { font-size: 2em; }
+            .stats-panel { flex-direction: column; gap: 15px; }
+            .controls { flex-direction: column; align-items: center; }
+            #gameCanvas { height: 400px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">🎯 PLINKO</h1>
+            <p class="subtitle">Drop balls, win prizes up to $1.00!</p>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-item">
+                <div class="stat-value" id="ticketCount">5</div>
+                <div class="stat-label">Tickets</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalWinnings">$0.00</div>
+                <div class="stat-label">Total Winnings</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="ballsDropped">0</div>
+                <div class="stat-label">Balls Dropped</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="prize-slots">
+                <div class="prize-slot prize-01">$0.01</div>
+                <div class="prize-slot prize-02">$0.02</div>
+                <div class="prize-slot prize-03">$0.03</div>
+                <div class="prize-slot prize-05">$0.05</div>
+                <div class="prize-slot prize-1">$1.00</div>
+                <div class="prize-slot prize-05">$0.05</div>
+                <div class="prize-slot prize-03">$0.03</div>
+                <div class="prize-slot prize-02">$0.02</div>
+                <div class="prize-slot prize-01">$0.01</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="dropBallBtn">Drop Ball (1 Ticket)</button>
+            <button class="btn btn-secondary" id="getFreeTicketsBtn">Get Free Tickets</button>
+        </div>
+    </div>
+
+    <script>
+        class PlinkoGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.tickets = 5;
+                this.totalWinnings = 0;
+                this.ballsDropped = 0;
+                this.balls = [];
+                this.pegs = [];
+                this.prizes = [0.01, 0.02, 0.03, 0.05, 1.00, 0.05, 0.03, 0.02, 0.01];
+                this.animationId = null;
+                
+                this.setupCanvas();
+                this.setupPegs();
+                this.setupEventListeners();
+                this.updateStats();
+                this.gameLoop();
+            }
+
+            setupCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * window.devicePixelRatio;
+                this.canvas.height = rect.height * window.devicePixelRatio;
+                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+                
+                this.width = rect.width;
+                this.height = rect.height;
+            }
+
+            setupPegs() {
+                this.pegs = [];
+                const rows = 8;
+                const pegSpacing = this.width / 10;
+                const rowSpacing = (this.height - 100) / rows;
+
+                for (let row = 0; row < rows; row++) {
+                    const pegsInRow = row + 3;
+                    const startX = (this.width - (pegsInRow - 1) * pegSpacing) / 2;
+                    
+                    for (let col = 0; col < pegsInRow; col++) {
+                        this.pegs.push({
+                            x: startX + col * pegSpacing,
+                            y: 80 + row * rowSpacing,
+                            radius: 6
+                        });
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                document.getElementById('dropBallBtn').addEventListener('click', () => this.dropBall());
+                document.getElementById('getFreeTicketsBtn').addEventListener('click', () => this.getFreeTickets());
+                
+                window.addEventListener('resize', () => {
+                    this.setupCanvas();
+                    this.setupPegs();
+                });
+            }
+
+            dropBall() {
+                if (this.tickets <= 0) {
+                    this.showNotification('No tickets remaining!', 'info');
+                    return;
+                }
+
+                this.tickets--;
+                this.ballsDropped++;
+                
+                const ball = {
+                    x: this.width / 2 + (Math.random() - 0.5) * 40,
+                    y: 20,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: 0,
+                    radius: 8,
+                    color: this.getRandomBallColor(),
+                    bounces: 0,
+                    trail: []
+                };
+
+                this.balls.push(ball);
+                this.updateStats();
+            }
+
+            getRandomBallColor() {
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            getFreeTickets() {
+                const freeTickets = 3;
+                this.tickets += freeTickets;
+                this.showNotification(`Got ${freeTickets} free tickets!`, 'info');
+                this.updateStats();
+            }
+
+            updateBalls() {
+                for (let i = this.balls.length - 1; i >= 0; i--) {
+                    const ball = this.balls[i];
+                    
+                    // Add to trail
+                    ball.trail.push({ x: ball.x, y: ball.y });
+                    if (ball.trail.length > 8) ball.trail.shift();
+                    
+                    // Physics
+                    ball.vy += 0.3; // gravity
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+                    
+                    // Friction
+                    ball.vx *= 0.99;
+                    
+                    // Check collision with pegs
+                    for (const peg of this.pegs) {
+                        const dx = ball.x - peg.x;
+                        const dy = ball.y - peg.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < ball.radius + peg.radius) {
+                            // Collision response
+                            const angle = Math.atan2(dy, dx);
+                            const targetX = peg.x + Math.cos(angle) * (peg.radius + ball.radius);
+                            const targetY = peg.y + Math.sin(angle) * (peg.radius + ball.radius);
+                            
+                            ball.x = targetX;
+                            ball.y = targetY;
+                            
+                            const bounce = 0.7;
+                            ball.vx = Math.cos(angle) * Math.abs(ball.vx + ball.vy) * bounce;
+                            ball.vy = Math.sin(angle) * Math.abs(ball.vx + ball.vy) * bounce;
+                            
+                            // Add some randomness
+                            ball.vx += (Math.random() - 0.5) * 2;
+                            ball.bounces++;
+                        }
+                    }
+                    
+                    // Wall collisions
+                    if (ball.x - ball.radius < 0) {
+                        ball.x = ball.radius;
+                        ball.vx = Math.abs(ball.vx) * 0.8;
+                    }
+                    if (ball.x + ball.radius > this.width) {
+                        ball.x = this.width - ball.radius;
+                        ball.vx = -Math.abs(ball.vx) * 0.8;
+                    }
+                    
+                    // Check if ball reached bottom
+                    if (ball.y + ball.radius >= this.height - 50) {
+                        const slotIndex = Math.floor((ball.x / this.width) * this.prizes.length);
+                        const clampedIndex = Math.max(0, Math.min(this.prizes.length - 1, slotIndex));
+                        const prize = this.prizes[clampedIndex];
+                        
+                        this.totalWinnings += prize;
+                        this.showNotification(`You won $${prize.toFixed(2)}!`, 'win');
+                        this.balls.splice(i, 1);
+                        this.updateStats();
+                        
+                        // Animate prize slot
+                        const prizeSlots = document.querySelectorAll('.prize-slot');
+                        if (prizeSlots[clampedIndex]) {
+                            prizeSlots[clampedIndex].classList.add('bounce');
+                            setTimeout(() => {
+                                prizeSlots[clampedIndex].classList.remove('bounce');
+                            }, 600);
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                // Draw background pattern
+                this.ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                for (let i = 0; i < this.width; i += 30) {
+                    this.ctx.fillRect(i, 0, 1, this.height);
+                }
+                
+                // Draw pegs
+                this.pegs.forEach(peg => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(peg.x, peg.y, peg.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = '#ecf0f1';
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = '#bdc3c7';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                });
+                
+                // Draw balls and trails
+                this.balls.forEach(ball => {
+                    // Draw trail
+                    for (let i = 0; i < ball.trail.length - 1; i++) {
+                        const alpha = i / ball.trail.length * 0.5;
+                        this.ctx.strokeStyle = ball.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                        this.ctx.lineWidth = (ball.radius * 2) * (alpha + 0.1);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(ball.trail[i].x, ball.trail[i].y);
+                        this.ctx.lineTo(ball.trail[i + 1].x, ball.trail[i + 1].y);
+                        this.ctx.stroke();
+                    }
+                    
+                    // Draw ball
+                    this.ctx.beginPath();
+                    this.ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                    
+                    // Gradient for 3D effect
+                    const gradient = this.ctx.createRadialGradient(
+                        ball.x - 3, ball.y - 3, 0,
+                        ball.x, ball.y, ball.radius
+                    );
+                    gradient.addColorStop(0, ball.color);
+                    gradient.addColorStop(1, this.darkenColor(ball.color, 0.3));
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = this.darkenColor(ball.color, 0.5);
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                });
+                
+                // Draw slot dividers
+                this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                this.ctx.lineWidth = 2;
+                for (let i = 1; i < this.prizes.length; i++) {
+                    const x = (i / this.prizes.length) * this.width;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, this.height - 60);
+                    this.ctx.lineTo(x, this.height - 10);
+                    this.ctx.stroke();
+                }
+            }
+
+            darkenColor(color, factor) {
+                const hex = color.replace('#', '');
+                const r = Math.floor(parseInt(hex.substr(0, 2), 16) * (1 - factor));
+                const g = Math.floor(parseInt(hex.substr(2, 2), 16) * (1 - factor));
+                const b = Math.floor(parseInt(hex.substr(4, 2), 16) * (1 - factor));
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            gameLoop() {
+                this.updateBalls();
+                this.draw();
+                this.animationId = requestAnimationFrame(() => this.gameLoop());
+            }
+
+            updateStats() {
+                document.getElementById('ticketCount').textContent = this.tickets;
+                document.getElementById('totalWinnings').textContent = '$' + this.totalWinnings.toFixed(2);
+                document.getElementById('ballsDropped').textContent = this.ballsDropped;
+                
+                const dropBtn = document.getElementById('dropBallBtn');
+                dropBtn.disabled = this.tickets <= 0;
+            }
+
+            showNotification(message, type) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+        }
+
+        // Initialize game when page loads
+        window.addEventListener('load', () => {
+            new PlinkoGame();
+        });
+    </script>
+</body>
+                  </html>
