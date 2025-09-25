@@ -122,11 +122,11 @@
             text-align: center;
         }
 
-        /* UPDATED: Prize Colors for $0.01, $0.05, $0.25, $1.00 */
-        .prize-01 { background: linear-gradient(135deg, #667eea, #764ba2); } /* Blue-Purple */
-        .prize-05 { background: linear-gradient(135deg, #f093fb, #f5576c); } /* Pink-Red */
-        .prize-25 { background: linear-gradient(135deg, #4facfe, #00f2fe); } /* Aqua-Blue */
-        .prize-1 { background: linear-gradient(135deg, #fa709a, #fee140); transform: scale(1.05); } /* Gold-Orange (Highlight) */
+        /* Prize Colors */
+        .prize-01 { background: linear-gradient(135deg, #667eea, #764ba2); } 
+        .prize-05 { background: linear-gradient(135deg, #f093fb, #f5576c); } 
+        .prize-25 { background: linear-gradient(135deg, #4facfe, #00f2fe); } 
+        .prize-1 { background: linear-gradient(135deg, #fa709a, #fee140); transform: scale(1.05); } 
 
         .controls {
             display: flex;
@@ -220,7 +220,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="totalWinnings">$0.00</div>
-                <div class="stat-label">Winnings</div>
+                <div class="stat-label">Total Winnings</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="ballsDropped">0</div>
@@ -251,8 +251,6 @@
     </div>
 
     <script>
-        // NOTE: All on-screen debug logs are removed.
-
         let game = null;
 
         function safeLog(message) {
@@ -285,9 +283,16 @@
                 this.balls = [];
                 this.pegs = [];
                 
-                // UPDATED PRIZE ARRAY to match the new tiers: [0.01, 0.01, 0.05, 0.25, 1.00, 0.25, 0.05, 0.01, 0.01]
-                this.prizes = [0.01, 0.01, 0.05, 0.25, 1.00, 0.25, 0.05, 0.01, 0.01];
-                
+                // --- PROBABILISTIC PRIZE MAPPING (Min prize is $0.01) ---
+                this.PRIZE_MAP = [
+                    // Cumulative Max for 60-day target:
+                    { max: 0.988800, prize: 0.01, text: '$0.01' }, // Now includes the 80.6% chance from the $0.00 tier
+                    { max: 0.998800, prize: 0.05, text: '$0.05' },
+                    { max: 0.999800, prize: 0.25, text: '$0.25' },
+                    { max: 1.000000, prize: 1.00, text: '$1.00' }
+                ];
+                // --------------------------------------------------------
+
                 this.isRunning = false;
                 
                 this.setupCanvas();
@@ -347,6 +352,19 @@
                 }
             }
 
+            // Function to determine prize based on probability
+            getProbabilisticPrize() {
+                const randomVal = Math.random(); // Get a number between 0 and 1
+                
+                for (const tier of this.PRIZE_MAP) {
+                    if (randomVal < tier.max) {
+                        return tier.prize;
+                    }
+                }
+                // Since the highest max is 1.000000, this should now always return a prize >= 0.01
+                return 0.01; 
+            }
+
             dropBall() {
                 if (this.tickets <= 0) {
                     this.showNotification('No tickets! Get free ones! 🎟️', 'info');
@@ -355,6 +373,9 @@
 
                 this.tickets--;
                 this.ballsDropped++;
+
+                // PRIZE IS DETERMINED HERE, BEFORE THE BALL DROPS
+                const determinedPrize = this.getProbabilisticPrize();
                 
                 const ball = {
                     x: this.width / 2 + (Math.random() - 0.5) * 60,
@@ -363,12 +384,13 @@
                     vy: 0,
                     radius: 8,
                     color: '#ff6b9d',
-                    trail: []
+                    trail: [],
+                    prize: determinedPrize // Store the guaranteed prize in the ball object
                 };
 
                 this.balls.push(ball);
                 this.updateStats();
-                safeLog(`Ball dropped! Total balls: ${this.balls.length}`);
+                safeLog(`Ball dropped! Probabilistic Prize: $${determinedPrize.toFixed(2)}`);
             }
 
             getFreeTickets() {
@@ -390,7 +412,7 @@
                     ball.y += ball.vy;
                     ball.vx *= 0.99;
                     
-                    // Peg collisions logic... (unchanged)
+                    // Peg collisions logic... 
                     for (const peg of this.pegs) {
                         const dx = ball.x - peg.x;
                         const dy = ball.y - peg.y;
@@ -408,26 +430,23 @@
                         }
                     }
                     
-                    // Wall bounce logic... (unchanged)
+                    // Wall bounce logic... 
                     if (ball.x < ball.radius || ball.x > this.width - ball.radius) {
                         ball.vx *= -0.8;
                         ball.x = Math.max(ball.radius, Math.min(this.width - ball.radius, ball.x));
                     }
                     
-                    // Bottom collision and prize calculation
+                    // Bottom collision: This triggers the prize payout
                     if (ball.y > this.height - 40) {
-                        const slotIndex = Math.floor((ball.x / this.width) * this.prizes.length);
-                        const index = Math.max(0, Math.min(this.prizes.length - 1, slotIndex));
                         
-                        // Prize determined by the slot index
-                        const prize = this.prizes[index];
+                        // AWARD THE PRE-DETERMINED PROBABILISTIC PRIZE
+                        const prize = ball.prize; 
                         
                         this.totalWinnings += prize;
-                        this.updateStats();
                         this.showNotification(`Won $${prize.toFixed(2)}! 💰`, 'win');
                         
                         this.balls.splice(i, 1);
-                        safeLog(`Ball won $${prize.toFixed(2)} in slot ${index}`);
+                        this.updateStats(); 
                     }
                 }
             }
@@ -478,8 +497,9 @@
                 this.ctx.stroke();
                 
                 // Slot lines
-                for (let i = 1; i < this.prizes.length; i++) {
-                    const x = (i / this.prizes.length) * this.width;
+                const numSlots = 9;
+                for (let i = 1; i < numSlots; i++) {
+                    const x = (i / numSlots) * this.width;
                     this.ctx.beginPath();
                     this.ctx.moveTo(x, this.height - 40);
                     this.ctx.lineTo(x, this.height);
