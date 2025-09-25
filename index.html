@@ -201,17 +201,6 @@
             60% { transform: translateY(-5px); }
         }
 
-        .debug {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
@@ -258,35 +247,33 @@
         </div>
     </div>
 
-    <!-- Debug info -->
-    <div id="debug" class="debug">Loading...</div>
-
     <script>
-        // Global variables for debugging
-        let game = null;
-        let debugInfo = document.getElementById('debug');
+        // NOTE: The 'log' function, 'debug' element, and all logging calls have been removed.
 
-        function log(message) {
+        // Global variables
+        let game = null;
+
+        // Custom log function removed. Standard console.log is now used only for potential errors.
+        function safeLog(message) {
+            // Use this function for any logs you still want in the browser console (F12)
+            // but NOT on the screen.
             console.log(message);
-            if (debugInfo) {
-                debugInfo.innerHTML += message + '<br>';
-            }
         }
 
         class PlinkoGame {
             constructor() {
-                log('🎯 Initializing Plinko Game...');
+                safeLog('Initializing Plinko Game...');
                 
                 // Get canvas
                 this.canvas = document.getElementById('gameCanvas');
                 if (!this.canvas) {
-                    log('❌ Canvas not found!');
+                    safeLog('❌ Canvas not found!');
                     return;
                 }
                 
                 this.ctx = this.canvas.getContext('2d');
                 if (!this.ctx) {
-                    log('❌ Canvas context failed!');
+                    safeLog('❌ Canvas context failed!');
                     return;
                 }
                 
@@ -308,9 +295,7 @@
                 this.updateStats();
                 this.start();
                 
-                log('✅ Game initialized successfully!');
-                log(`📏 Canvas: ${this.width}x${this.height}`);
-                log(`⚫ Pegs: ${this.pegs.length}`);
+                safeLog('Game initialized successfully!');
             }
 
             setupCanvas() {
@@ -319,10 +304,10 @@
                 this.canvas.style.width = this.width + 'px';
                 this.canvas.style.height = this.height + 'px';
                 
-                // Test draw
+                // Test draw (kept for functional testing)
                 this.ctx.fillStyle = '#ff0000';
                 this.ctx.fillRect(10, 10, 50, 50);
-                log('🎨 Canvas setup complete');
+                safeLog('Canvas setup complete');
             }
 
             createPegs() {
@@ -343,7 +328,7 @@
                         });
                     }
                 }
-                log(`⚫ Created ${this.pegs.length} pegs`);
+                safeLog(`Created ${this.pegs.length} pegs`);
             }
 
             setupEvents() {
@@ -352,16 +337,16 @@
                 
                 if (dropBtn) {
                     dropBtn.onclick = () => this.dropBall();
-                    log('🎯 Drop button connected');
+                    safeLog('Drop button connected');
                 } else {
-                    log('❌ Drop button not found');
+                    safeLog('❌ Drop button not found');
                 }
                 
                 if (ticketBtn) {
                     ticketBtn.onclick = () => this.getFreeTickets();
-                    log('🎟️ Ticket button connected');
+                    safeLog('Ticket button connected');
                 } else {
-                    log('❌ Ticket button not found');
+                    safeLog('❌ Ticket button not found');
                 }
             }
 
@@ -386,14 +371,14 @@
 
                 this.balls.push(ball);
                 this.updateStats();
-                log(`🏀 Ball dropped! Total balls: ${this.balls.length}`);
+                safeLog(`Ball dropped! Total balls: ${this.balls.length}`);
             }
 
             getFreeTickets() {
                 this.tickets += 3;
                 this.updateStats();
                 this.showNotification('Got 3 free tickets! 🎟️', 'info');
-                log(`🎟️ Added tickets, total: ${this.tickets}`);
+                safeLog(`Added tickets, total: ${this.tickets}`);
             }
 
             updateBalls() {
@@ -445,7 +430,7 @@
                         this.showNotification(`Won $${prize.toFixed(2)}! 💰`, 'win');
                         
                         this.balls.splice(i, 1);
-                        log(`💰 Ball won $${prize.toFixed(2)} in slot ${index}`);
+                        safeLog(`Ball won $${prize.toFixed(2)} in slot ${index}`);
                     }
                 }
             }
@@ -511,7 +496,7 @@
                 if (this.isRunning) return;
                 this.isRunning = true;
                 this.gameLoop();
-                log('🚀 Game loop started');
+                safeLog('Game loop started');
             }
 
             gameLoop() {
@@ -548,26 +533,19 @@
 
         // Initialize when page loads
         window.addEventListener('load', function() {
-            log('📄 Page loaded, starting game...');
+            safeLog('Page loaded, starting game...');
             
             setTimeout(() => {
                 try {
                     game = new PlinkoGame();
-                    log('✅ Game created successfully');
+                    safeLog('Game created successfully');
                 } catch (error) {
-                    log('❌ Error creating game: ' + error.message);
+                    safeLog('❌ Error creating game: ' + error.message);
                 }
             }, 100);
         });
 
-        // Debug buttons
-        function testCanvas() {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(100, 100, 100, 100);
-            log('🟢 Test canvas draw');
-        }
+        // Debug buttons function removed.
     </script>
 </body>
 </html>
