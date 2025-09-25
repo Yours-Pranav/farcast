@@ -82,7 +82,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Alignment Fix Start --- */
+        /* FIX 1: Ensure game board centers content */
         .game-board {
             background: linear-gradient(145deg, rgba(18, 18, 39, 0.9), rgba(30, 30, 60, 0.7));
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -90,14 +90,13 @@
             padding: 20px;
             margin-bottom: 20px;
             backdrop-filter: blur(20px);
-            /* Ensure the canvas centers properly */
-            display: flex; 
+            display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: center; /* Center the canvas and prize grid */
         }
 
+        /* FIX 2: Set Canvas to fixed pixel width matching JS */
         #gameCanvas {
-            /* The canvas itself still has these fixed dimensions */
             width: 380px; 
             height: 480px;
             border-radius: 16px;
@@ -106,8 +105,7 @@
             display: block;
         }
 
-        /* --- Alignment Fix End --- */
-
+        /* FIX 3: Set Prize Grid to fixed pixel width matching JS */
         .prize-grid {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
@@ -116,8 +114,7 @@
             padding: 12px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 16px;
-            /* Make the prize grid match the canvas width */
-            width: 380px; 
+            width: 380px;
         }
 
         .prize-slot {
@@ -210,7 +207,8 @@
             40% { transform: translateY(-10px); }
             60% { transform: translateY(-5px); }
         }
-
+        
+        /* Removed .debug CSS */
     </style>
 </head>
 <body>
@@ -258,12 +256,13 @@
     </div>
 
     <script>
-        // NOTE: The 'log' function and all logging calls are still removed from the UI.
+        // NOTE: The 'log' function and the debug element logic have been removed from the UI.
 
-        // Global variables
         let game = null;
 
+        // Clean logging function
         function safeLog(message) {
+            // Logs only to the browser console (F12), not on the screen.
             console.log(message);
         }
 
@@ -273,6 +272,11 @@
                 
                 // Get canvas
                 this.canvas = document.getElementById('gameCanvas');
+                
+                // Game state (380x480 matches the fixed CSS size for perfect alignment)
+                this.width = 380; 
+                this.height = 480;
+
                 if (!this.canvas) {
                     safeLog('❌ Canvas not found!');
                     return;
@@ -284,9 +288,6 @@
                     return;
                 }
                 
-                // Game state
-                this.width = 380;
-                this.height = 480;
                 this.tickets = 5;
                 this.totalWinnings = 0;
                 this.ballsDropped = 0;
@@ -306,13 +307,12 @@
             }
 
             setupCanvas() {
+                // Set internal canvas resolution to match the fixed CSS size
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
-                this.canvas.style.width = this.width + 'px';
-                this.canvas.style.height = this.height + 'px';
                 
-                this.ctx.fillStyle = '#ff0000';
-                this.ctx.fillRect(10, 10, 50, 50);
+                // The CSS already handles the visual size, but setting style.width/height is redundant
+                // when CSS rules are fixed, so we'll keep the internal resolution correct.
                 safeLog('Canvas setup complete');
             }
 
@@ -321,33 +321,22 @@
                 const rows = 8;
                 const spacing = 35;
                 
-                // --- Alignment Fix Start (Adjusted Peg Calculation) ---
-                // Calculate the true width of the widest row (Row 7 has 10 pegs, 9 spaces)
-                const maxPegs = 3 + (rows - 1); // 3 + 7 = 10
-                const widestPegRowWidth = (maxPegs - 1) * spacing;
-                // Calculate the total horizontal padding needed to center all rows
-                const totalPadding = this.width - widestPegRowWidth;
-                const initialXOffset = totalPadding / 2; // This is the new, more accurate starting point
-
                 for (let row = 0; row < rows; row++) {
                     const pegsInRow = 3 + row;
+                    // FIX 4: Recalculate startX to ensure alignment with the 9 prize slots
                     const rowWidth = (pegsInRow - 1) * spacing;
-                    // Calculate the left offset for this specific row to center it
-                    const rowCenterOffset = (this.width - rowWidth) / 2;
+                    const startX = (this.width - rowWidth) / 2;
                     
-                    // The alternating offset for the triangular shape
                     const offsetX = (row % 2) * (spacing / 2);
                     
                     for (let col = 0; col < pegsInRow; col++) {
                         this.pegs.push({
-                            // Use the rowCenterOffset to position each row correctly
-                            x: rowCenterOffset + col * spacing + offsetX, 
+                            x: startX + col * spacing + offsetX,
                             y: 60 + row * 45,
                             radius: 5
                         });
                     }
                 }
-                // --- Alignment Fix End ---
                 safeLog(`Created ${this.pegs.length} pegs`);
             }
 
@@ -553,4 +542,19 @@
 
         // Initialize when page loads
         window.addEventListener('load', function() {
-            s
+            safeLog('Page loaded, starting game...');
+            
+            setTimeout(() => {
+                try {
+                    game = new PlinkoGame();
+                    safeLog('Game created successfully');
+                } catch (error) {
+                    safeLog('❌ Error creating game: ' + error.message);
+                }
+            }, 100);
+        });
+        
+        // Removed: function testCanvas() { ... }
+    </script>
+</body>
+</html>
